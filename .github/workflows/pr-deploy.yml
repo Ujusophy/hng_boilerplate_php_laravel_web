@@ -55,7 +55,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
             scp -o StrictHostKeyChecking=no my-app-${{ github.event.pull_request.number }}.tar $SSH_USER@$SSH_HOST:/var/www/langlearnai-be/deployment
             docker load -i /var/www/langlearnai-be/deployment/my-app-${{ github.event.pull_request.number }}.tar
-            cd /var/www/langlearnai-be/deployment
+            cd /var/www/langlearnai-be/pr
             docker-compose -f docker-compose.staging.yml down
             docker-compose -f docker-compose.staging.yml up -d
           EOF
