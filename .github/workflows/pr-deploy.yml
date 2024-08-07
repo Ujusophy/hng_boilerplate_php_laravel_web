@@ -23,8 +23,10 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t my-app:latest .
-          docker save -o my-app.tar my-app:latest
+          # Generate a valid Docker tag based on PR number
+          PR_TAG="pr-${{ github.event.pull_request.number }}"
+          docker build -t my-app:${PR_TAG} .
+          docker save -o my-app-${PR_TAG}.tar my-app:${PR_TAG}
 
       - id: deploy
         name: Pull Request Deploy
@@ -51,8 +53,8 @@ jobs:
           SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
         run: |
           ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
-            scp -o StrictHostKeyChecking=no my-app.tar $SSH_USER@$SSH_HOST:/var/www/langlearnai-be/deployment
-            docker load -i /var/www/langlearnai-be/deployment/my-app.tar
+            scp -o StrictHostKeyChecking=no my-app-${{ github.event.pull_request.number }}.tar $SSH_USER@$SSH_HOST:/var/www/langlearnai-be/deployment
+            docker load -i /var/www/langlearnai-be/deployment/my-app-${{ github.event.pull_request.number }}.tar
             cd /var/www/langlearnai-be/deployment
             docker-compose -f docker-compose.staging.yml down
             docker-compose -f docker-compose.staging.yml up -d
