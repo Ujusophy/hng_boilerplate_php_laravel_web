@@ -62,7 +62,8 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             docker load -i /srv/my-app-${{ github.event.pull_request.number }}.tar
-            cd /srv
+            cd /var/www/langlearnai-be/pr
+            git pull origin dev
             docker-compose -f docker-compose.staging.yml down
             docker-compose -f docker-compose.staging.yml up -d
           EOF
