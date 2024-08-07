@@ -9,7 +9,7 @@ on:
 
 jobs:
   deploy-pr:
-    environment: 
+    environment:
       name: preview
       url: ${{ steps.deploy.outputs.preview-url }}
     runs-on: ubuntu-latest
@@ -26,35 +26,34 @@ jobs:
           docker build -t my-app:latest .
           docker save -o my-app.tar my-app:latest
 
-      - name: Upload Docker image to server
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
+      - id: deploy
+        name: Pull Request Deploy
+        uses: hngprojects/pr-deploy@v1.1.9
+        with:
+          server_host: ${{ secrets.SSH_HOST }}
+          server_username: ${{ secrets.SSH_USER }}
+          server_password: ${{ secrets.SSH_PASSWORD }}
+          comment: true
+          context: '.'
+          dockerfile: 'Dockerfile'
+          host_volume_path: '/var/www/langlearnai-be/deployment'
+          container_volume_path: '/var/www/langlearnai-be/deployment'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print Preview URL
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan $SSH_HOST >> ~/.ssh/known_hosts
-          scp -o StrictHostKeyChecking=no my-app.tar $SSH_USER@$SSH_HOST:/var/www/langlearnai-be/deployment
+          echo "Preview URL: ${{ steps.deploy.outputs.preview-url }}"
 
       - name: Deploy Docker image on server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan $SSH_HOST >> ~/.ssh/known_hosts
           ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
+            scp -o StrictHostKeyChecking=no my-app.tar $SSH_USER@$SSH_HOST:/var/www/langlearnai-be/deployment
             docker load -i /var/www/langlearnai-be/deployment/my-app.tar
             cd /var/www/langlearnai-be/deployment
             docker-compose -f docker-compose.staging.yml down
             docker-compose -f docker-compose.staging.yml up -d
           EOF
-
-      - name: Print Preview URL
-        run: |
-          echo "Preview URL: http://$SSH_HOST"
