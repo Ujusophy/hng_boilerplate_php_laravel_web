@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=app
+      - DB_USERNAME=app
+      - DB_PASSWORD=changethis123
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: changethis123
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
+
+  proxy:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: always
+    ports:
+      - '8090:81'
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./certs:/etc/nginx/letsencrypt
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 3
+      start_period: 30s
+      timeout: 5s
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+
+  adminer:
+    image: adminer:latest
