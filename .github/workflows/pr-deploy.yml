@@ -9,41 +9,60 @@ on:
 
 jobs:
   deploy-pr:
-    environment:
+    environment: 
       name: preview
       url: ${{ steps.deploy.outputs.preview-url }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Checkout to branch
+        uses: actions/checkout@v4
+      - id: deploy
+        name: Pull Request Deploy
+        uses: hngprojects/pr-deploy@2.0.1
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+      - name: Remove last Docker image
+        run: |
+          PR_TAG="pr-${{ github.event.pull_request.number }}"
+          LAST_PR_TAG=$((PR_TAG - 1))
+          docker rmi -f my-app:pr-${LAST_PR_TAG} || true
 
       - name: Build Docker image
         run: |
           PR_TAG="pr-${{ github.event.pull_request.number }}"
-          docker build -t my-app:${PR_TAG} .
-          docker save -o my-app-${PR_TAG}.tar my-app:${PR_TAG}
+          docker build -t app:${PR_TAG} .
+          docker save -o app-${PR_TAG}.tar app:${PR_TAG}
 
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.5.3
+      - name: Zip Docker image
+        run: |
+          PR_TAG="pr-${{ github.event.pull_request.number }}"
+          tar -czf app-${PR_TAG}.tar.gz my-app-${PR_TAG}.tar
+
+      - name: Upload Docker image as artifact
+        uses: actions/upload-artifact@v2
         with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
+          name: my-app-${{ github.event.pull_request.number }}
+          path: my-app-${{ github.event.pull_request.number }}.tar.gz
+
+      - name: Remove zipped Docker image
+        run: |
+          PR_TAG="pr-${{ github.event.pull_request.number }}"
+          rm -f my-app-${PR_TAG}.tar.gz
 
       - name: Upload Docker image to server
         run: |
           PR_TAG="pr-${{ github.event.pull_request.number }}"
           scp -o StrictHostKeyChecking=no my-app-${PR_TAG}.tar ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/srv
 
-      - name: Deploy Docker image on server
+      - name: Load Docker image on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            # Load Docker image
-            docker load -i /srv/my-app-${{ github.event.pull_request.number }}.tar
+            PR_TAG="pr-${{ github.event.pull_request.number }}"
+            tar -xzf /srv/my-app-${PR_TAG}.tar.gz -C /srv
+            docker load -i /srv/my-app-${PR_TAG}.tar
+            rm -f /srv/my-app-${PR_TAG}.tar.gz
+            rm -f /srv/my-app-${PR_TAG}.tar
             cd /var/www/langlearnai-be/pr
             git pull origin dev
-            docker-compose -f docker-compose.staging.yml down
-            docker-compose -f docker-compose.staging.yml up -d
+            sudo docker-compose -f docker-compose.staging.yml down
+            sudo docker-compose -f docker-compose.staging.yml up -d
           EOF
