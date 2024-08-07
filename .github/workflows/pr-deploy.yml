@@ -26,18 +26,15 @@ jobs:
           PR_TAG="pr-${{ github.event.pull_request.number }}"
           docker build -t my-app:${PR_TAG} .
           docker save -o my-app-${PR_TAG}.tar my-app:${PR_TAG}
-
-      - name: Add SSH key
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
+          ls -l my-app-${PR_TAG}.tar  # Confirm file creation
 
       - name: Upload Docker image to server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
         run: |
-          scp -o StrictHostKeyChecking=no my-app-${{ github.event.pull_request.number }}.tar $SSH_USER@$SSH_HOST:/srv
+          PR_TAG="pr-${{ github.event.pull_request.number }}"
+          scp -o StrictHostKeyChecking=no my-app-${PR_TAG}.tar $SSH_USER@$SSH_HOST:/srv
 
       - id: deploy
         name: Pull Request Deploy
