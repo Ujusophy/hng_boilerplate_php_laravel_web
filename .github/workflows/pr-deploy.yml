@@ -23,10 +23,19 @@ jobs:
 
       - name: Build Docker image
         run: |
-          # Generate a valid Docker tag based on PR number
           PR_TAG="pr-${{ github.event.pull_request.number }}"
           docker build -t my-app:${PR_TAG} .
           docker save -o my-app-${PR_TAG}.tar my-app:${PR_TAG}
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Upload Docker image to server
+        run: |
+          PR_TAG="pr-${{ github.event.pull_request.number }}"
+          scp -o StrictHostKeyChecking=no my-app-${PR_TAG}.tar ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/srv
 
       - id: deploy
         name: Pull Request Deploy
@@ -34,28 +43,22 @@ jobs:
         with:
           server_host: ${{ secrets.SSH_HOST }}
           server_username: ${{ secrets.SSH_USER }}
-          server_password: ${{ secrets.SSH_PASSWORD }}
           comment: true
           context: '.'
           dockerfile: 'Dockerfile'
-          host_volume_path: '/var/www/langlearnai-be/deployment'
-          container_volume_path: '/var/www/langlearnai-be/deployment'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          host_volume_path: '/srv'
+          container_volume_path: '/srv'
 
       - name: Print Preview URL
         run: |
           echo "Preview URL: ${{ steps.deploy.outputs.preview-url }}"
 
       - name: Deploy Docker image on server
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
-            scp -o StrictHostKeyChecking=no my-app-${{ github.event.pull_request.number }}.tar $SSH_USER@$SSH_HOST:/var/www/langlearnai-be/deployment
-            docker load -i /var/www/langlearnai-be/deployment/my-app-${{ github.event.pull_request.number }}.tar
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            docker load -i /srv/my-app-${{ github.event.pull_request.number }}.tar
             cd /var/www/langlearnai-be/pr
-            sudo docker-compose -f docker-compose.staging.yml down
-            sudo docker-compose -f docker-compose.staging.yml up -d
+            git pull origin dev
+            docker-compose -f docker-compose.staging.yml down
+            docker-compose -f docker-compose.staging.yml up -d
           EOF
