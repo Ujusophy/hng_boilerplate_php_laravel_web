@@ -27,11 +27,15 @@ jobs:
           docker build -t my-app:${PR_TAG} .
           docker save -o my-app-${PR_TAG}.tar my-app:${PR_TAG}
 
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
       - name: Upload Docker image to server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PASSWORD: ${{ secrets.SSH_KEY }}
         run: |
           scp -o StrictHostKeyChecking=no my-app-${{ github.event.pull_request.number }}.tar $SSH_USER@$SSH_HOST:/srv
 
@@ -41,13 +45,11 @@ jobs:
         with:
           server_host: ${{ secrets.SSH_HOST }}
           server_username: ${{ secrets.SSH_USER }}
-          server_password: ${{ secrets.SSH_KEY }}
           comment: true
           context: '.'
           dockerfile: 'Dockerfile'
           host_volume_path: '/srv'
           container_volume_path: '/srv'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print Preview URL
         run: |
@@ -57,7 +59,6 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PASSWORD: ${{ secrets.SSH_KEY }}
         run: |
           ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
             docker load -i /srv/my-app-${{ github.event.pull_request.number }}.tar
