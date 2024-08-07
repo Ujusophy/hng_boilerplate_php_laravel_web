@@ -1,0 +1,47 @@
+name: PR Deploy
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  deploy-pr:
+    environment: 
+      name: preview
+      url: ${{ steps.deploy.outputs.preview-url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Build and push Docker image
+        run: |
+          docker build -t my-app:latest .
+          docker save -o my-app.tar my-app:latest
+      - name: Checkout to branch
+        uses: actions/checkout@v4
+      - id: deploy
+        name: Pull Request Deploy
+        uses: hngprojects/pr-deploy@1.1.9
+        with:
+          server_host: ${{ secrets.SSH_HOST }}
+          server_username: ${{ secrets.SSH_USER }}
+          server_password: ${{ secrets.SSH_PASSWORD }}
+          comment: true
+          context: '.'
+          dockerfile: 'Dockerfile'
+          host_volume_path: '/var/'
+          container_volume_path: '/var/'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+     - name: Print Preview Url
+        run: |
+          echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}" 
+        run: |
+          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << 'EOF'
+            scp my-app.tar secrets.SSH_USER@secrets.SSH_HOST:/var/www/langlearnai-be/deployment
+            docker load -i my-app.tar
+            cd ./docker-compose.staging.yml
+            docker-compose down
+            docker-compose up -d
+          EOF
