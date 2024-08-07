@@ -31,7 +31,7 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_PASSWORD: ${{ secrets.SSH_KEY }}
         run: |
           scp -o StrictHostKeyChecking=no my-app-${{ github.event.pull_request.number }}.tar $SSH_USER@$SSH_HOST:/srv
 
@@ -41,7 +41,7 @@ jobs:
         with:
           server_host: ${{ secrets.SSH_HOST }}
           server_username: ${{ secrets.SSH_USER }}
-          server_password: ${{ secrets.SSH_PASSWORD }}
+          server_password: ${{ secrets.SSH_KEY }}
           comment: true
           context: '.'
           dockerfile: 'Dockerfile'
@@ -57,7 +57,7 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_PASSWORD: ${{ secrets.SSH_KEY }}
         run: |
           ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
             docker load -i /srv/my-app-${{ github.event.pull_request.number }}.tar
