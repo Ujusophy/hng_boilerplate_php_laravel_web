@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Admin\BlogController;
 use App\Http\Controllers\Api\V1\Admin\CustomerController;
+use App\Http\Controllers\Api\V1\Admin\DashboardController;
 use App\Http\Controllers\Api\V1\Admin\EmailTemplateController;
 use App\Http\Controllers\Api\V1\Admin\Plan\FeatureController;
 use App\Http\Controllers\Api\V1\Admin\Plan\SubscriptionController;
@@ -43,7 +44,9 @@ use App\Http\Controllers\Api\V1\JobSearchController;
 use App\Http\Controllers\Api\V1\WaitListController;
 use App\Http\Controllers\Api\V1\CookiePreferencesController;
 use App\Http\Controllers\Api\V1\SqueezePageCoontroller;
+use App\Http\Controllers\Api\V1\TimezoneController;
 
+use App\Http\Controllers\QuestController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -219,6 +222,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('/blogs/{id}', [BlogController::class, 'destroy']);
         Route::get('/waitlists', [WaitListController::class, 'index']);
         Route::apiResource('squeeze-pages', SqueezePageCoontroller::class);
+        Route::get('/dashboard-cards', [DashboardController::class, 'index']);
     });
 
     Route::post('/waitlists', [WaitListController::class, 'store']);
@@ -248,4 +252,12 @@ Route::prefix('v1')->group(function () {
     Route::delete('/notifications', [UserNotificationController::class, 'destroy']);
     Route::post('/notifications', [UserNotificationController::class, 'create'])->middleware('auth.jwt');
     Route::get('/notifications', [UserNotificationController::class, 'getByUser'])->middleware('auth.jwt');
+    //Timezone
+    Route::get('/timezones', [TimezoneController::class, 'index']);
+
+
+
+//    quest
+    Route::get('/quests/{id}/messages', [QuestController::class, 'getQuestMessages']);
+
 });
