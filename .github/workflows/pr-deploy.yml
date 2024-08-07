@@ -18,6 +18,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Clean up Docker images and containers
+        run: |
+          docker system prune -af
+          docker volume prune -f
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
