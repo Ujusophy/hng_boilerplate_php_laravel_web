@@ -23,10 +23,17 @@ jobs:
 
       - name: Build Docker image
         run: |
-          # Generate a valid Docker tag based on PR number
           PR_TAG="pr-${{ github.event.pull_request.number }}"
           docker build -t my-app:${PR_TAG} .
           docker save -o my-app-${PR_TAG}.tar my-app:${PR_TAG}
+
+      - name: Upload Docker image to server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          scp -o StrictHostKeyChecking=no my-app-${{ github.event.pull_request.number }}.tar $SSH_USER@$SSH_HOST:/srv
 
       - id: deploy
         name: Pull Request Deploy
@@ -38,8 +45,8 @@ jobs:
           comment: true
           context: '.'
           dockerfile: 'Dockerfile'
-          host_volume_path: '/var/www/langlearnai-be/deployment'
-          container_volume_path: '/var/www/langlearnai-be/deployment'
+          host_volume_path: '/srv'
+          container_volume_path: '/srv'
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print Preview URL
@@ -53,9 +60,8 @@ jobs:
           SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
         run: |
           ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
-            scp -o StrictHostKeyChecking=no my-app-${{ github.event.pull_request.number }}.tar $SSH_USER@$SSH_HOST:/var/www/langlearnai-be/deployment
-            docker load -i /var/www/langlearnai-be/deployment/my-app-${{ github.event.pull_request.number }}.tar
-            cd /var/www/langlearnai-be/deployment
+            docker load -i /srv/my-app-${{ github.event.pull_request.number }}.tar
+            cd /srv
             docker-compose -f docker-compose.staging.yml down
             docker-compose -f docker-compose.staging.yml up -d
           EOF
