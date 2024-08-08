@@ -59,6 +59,6 @@ jobs:
           script: |
             IMAGE_TAG="latest"
             cd /tmp/php
-            gunzip myapp-${IMAGE_TAG}.tar.gz
-            docker load < myapp-${IMAGE_TAG}.tar
-            rm -f myapp-${IMAGE_TAG}.tar
+            gunzip myapp-latest.tar.gz
+            docker load < myapp-latest.tar
+            rm -f myapp-latest.tar
