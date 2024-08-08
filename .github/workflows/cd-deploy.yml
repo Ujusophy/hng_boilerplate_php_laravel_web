@@ -22,13 +22,12 @@ jobs:
           docker buildx build --tag myapp:${IMAGE_TAG} --file Dockerfile .
       - name: Save and Compress Docker Image
         run: |
-          IMAGE_TAG="latest"
-          docker save myapp:${IMAGE_TAG} | gzip > myapp-${IMAGE_TAG}.tar.gz
+          docker save delve_BE-latest -o image.tar
       - name: Upload Docker Image Artifact
         uses: actions/upload-artifact@v2
         with:
           name: docker-image
-          path: myapp-latest.tar.gz
+          path: delve_BE-latest.tar.gz
 
   deploy_to_server:
     needs: build_and_deploy
@@ -47,7 +46,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: myapp-latest.tar.gz
+          source: delve_BE-latest.tar.gz
           target: /tmp/php
 
       - name: Load and Deploy Docker Image on Server
@@ -59,6 +58,6 @@ jobs:
           script: |
             IMAGE_TAG="latest"
             cd /tmp/php
-            gunzip myapp-latest.tar.gz
-            docker load < myapp-latest.tar
-            rm -f myapp-latest.tar
+            gunzip delve_BE-latest.tar.gz
+            docker load < delve_BE-latest.tar
+            rm -f delve_BE-latest.tar.gz
