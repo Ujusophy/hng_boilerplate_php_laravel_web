@@ -22,7 +22,7 @@ jobs:
           docker buildx build --tag delve_be-latest --file Dockerfile .
       - name: Save and Compress Docker Image
         run: |
-          docker save delve_BE-latest -o image.tar
+          docker save delve_be-latest -o image.tar
       - name: Upload Docker Image Artifact
         uses: actions/upload-artifact@v2
         with:
