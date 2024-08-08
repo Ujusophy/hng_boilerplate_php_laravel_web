@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: myapp:latest # Use the image built by GitHub Actions
+    image: delve_be:latest # Use the image built by GitHub Actions
     ports:
       - "8000:8000"
     depends_on:
