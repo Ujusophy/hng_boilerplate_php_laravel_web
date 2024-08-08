@@ -65,8 +65,9 @@ jobs:
             docker load < myapp-${IMAGE_TAG}.tar
 
             # Remove previous Docker image
-            docker rmi -f $(docker images -f "dangling=true" -q) || true
+            docker images -f "dangling=true" -q | xargs -r docker rmi -f
             rm -f myapp-${IMAGE_TAG}.tar
             cd /var/www/langlearnai-be/pr
-            docker-compose -f docker-compose.yml down
+            git pull origin devops
+            docker-compose -f docker-compose.staging.yml down
             docker-compose -f docker-compose.yml up -d
