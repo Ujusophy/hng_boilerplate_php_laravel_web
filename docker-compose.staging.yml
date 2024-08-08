@@ -22,6 +22,8 @@ services:
       - QUEUE_CONNECTION=redis
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - WWWGROUP=1000
+      - WWWUSER=1000
 
   db:
     image: postgres:latest
