@@ -8,39 +8,12 @@ on:
       - devops
 
 jobs:
-  deploy-pr:
-    if: github.event_name == 'pull_request'
-    environment: 
-      name: preview
-      url: ${{ steps.deploy.outputs.preview-url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout to branch
-        uses: actions/checkout@v4
-        
-      - id: deploy
-        name: Pull Request Deploy
-        uses: hngprojects/pr-deploy@dev
-        with:
-          server_host: ${{ secrets.SSH_HOST }}
-          server_username: ${{ secrets.SSH_USER }}
-          server_password: ${{ secrets.SSH_PASSWORD }}
-          comment: true
-          context: '.'
-          dockerfile: 'Dockerfile'
-          exposed_port: '5007'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-        
-      - name: Print Preview Url
-        run: echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}" 
-
   build_and_deploy:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
       - name: Build Docker Image
         run: |
@@ -56,19 +29,17 @@ jobs:
           docker save delve_be:${IMAGE_TAG} -o delve_be.tar
 
       - name: Upload Docker Image Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v2
         with:
           name: docker-image
           path: delve_be.tar
 
   deploy_to_server:
-    if: github.event_name == 'push'
     needs: build_and_deploy
     runs-on: ubuntu-latest
-
     steps:
       - name: Download Docker Image Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v2
         with:
           name: docker-image
           path: .
@@ -97,3 +68,25 @@ jobs:
             git pull origin devops
             docker-compose -f docker-compose.staging.yml down
             docker-compose -f docker-compose.staging.yml up -d
+
+  deploy-pr:
+    if: github.event_name == 'push_request'
+    environment: 
+      name: preview
+      url: ${{ steps.deploy.outputs.preview-url }}
+    runs-on: ubuntu-latest
+    needs: build_and_deploy
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Pull Request Deploy
+        id: deploy
+        uses: hngprojects/pr-deploy@dev
+        with:
+          server_host: ${{ secrets.SSH_HOST }}
+          server_username: ${{ secrets.SSH_USER }}
+          server_password: ${{ secrets.SSH_PASSWORD }}
+
+      - name: Print Preview Url
+        run: echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}"
