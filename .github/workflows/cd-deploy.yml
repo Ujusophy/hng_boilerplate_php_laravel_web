@@ -20,17 +20,15 @@ jobs:
         run: |
           IMAGE_TAG="latest"
           docker buildx build --tag myapp:${IMAGE_TAG} --file Dockerfile .
-
       - name: Save and Compress Docker Image
         run: |
           IMAGE_TAG="latest"
           docker save myapp:${IMAGE_TAG} | gzip > myapp-${IMAGE_TAG}.tar.gz
-
       - name: Upload Docker Image Artifact
         uses: actions/upload-artifact@v2
         with:
           name: docker-image
-          path: myapp-${IMAGE_TAG}.tar.gz
+          path: myapp-latest.tar.gz
 
   deploy_to_server:
     needs: build_and_deploy
@@ -49,15 +47,15 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: myapp-${IMAGE_TAG}.tar.gz
+          source: myapp-latest.tar.gz
           target: /tmp/php
 
       - name: Load and Deploy Docker Image on Server
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             IMAGE_TAG="latest"
             cd /tmp/php
