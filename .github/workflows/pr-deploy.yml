@@ -1,68 +1,73 @@
-name: PR Deploy
+name: CD Pipeline
 
 on:
   push:
     branches:
       - dev
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
 
 jobs:
-  deploy-pr:
-    environment: 
-      name: preview
-      url: ${{ steps.deploy.outputs.preview-url }}
+  build_and_deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout to branch
-        uses: actions/checkout@v4
-      - id: deploy
-        name: Pull Request Deploy
-        uses: hngprojects/pr-deploy@v2.0.1
+      - name: Checkout Code
+        uses: actions/checkout@v2
 
-      - name: Remove last Docker image
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build Docker Image
         run: |
-          PR_TAG="pr-${{ github.event.pull_request.number }}"
-          LAST_PR_TAG=$((PR_TAG - 1))
-          docker rmi -f my-app:pr-${LAST_PR_TAG} || true
+          IMAGE_TAG="latest"
+          docker buildx build --tag myapp:${IMAGE_TAG} --file Dockerfile .
 
-      - name: Build Docker image
+      - name: Save and Compress Docker Image
         run: |
-          PR_TAG="pr-${{ github.event.pull_request.number }}"
-          docker build -t app:${PR_TAG} .
-          docker save -o app-${PR_TAG}.tar app:${PR_TAG}
+          IMAGE_TAG="latest"
+          docker save myapp:${IMAGE_TAG} | gzip > myapp-${IMAGE_TAG}.tar.gz
 
-      - name: Zip Docker image
-        run: |
-          PR_TAG="pr-${{ github.event.pull_request.number }}"
-          tar -czf app-${PR_TAG}.tar.gz my-app-${PR_TAG}.tar
-
-      - name: Upload Docker image as artifact
+      - name: Upload Docker Image Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: my-app-${{ github.event.pull_request.number }}
-          path: my-app-${{ github.event.pull_request.number }}.tar.gz
+          name: docker-image
+          path: myapp-latest.tar.gz
 
-      - name: Remove zipped Docker image
-        run: |
-          PR_TAG="pr-${{ github.event.pull_request.number }}"
-          rm -f my-app-${PR_TAG}.tar.gz
+  deploy_to_server:
+    needs: build_and_deploy
+    runs-on: ubuntu-latest
 
-      - name: Upload Docker image to server
-        run: |
-          PR_TAG="pr-${{ github.event.pull_request.number }}"
-          scp -o StrictHostKeyChecking=no my-app-${PR_TAG}.tar ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/srv
+    steps:
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: docker-image
+          path: .
 
-      - name: Load Docker image on server
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            PR_TAG="pr-${{ github.event.pull_request.number }}"
-            tar -xzf /srv/my-app-${PR_TAG}.tar.gz -C /srv
-            docker load -i /srv/my-app-${PR_TAG}.tar
-            rm -f /srv/my-app-${PR_TAG}.tar.gz
-            rm -f /srv/my-app-${PR_TAG}.tar
-            cd /var/www/langlearnai-be/pr
-            git pull origin dev
-            sudo docker-compose -f docker-compose.staging.yml down
-            sudo docker-compose -f docker-compose.staging.yml up -d
-          EOF
+      - name: Transfer Docker Image to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: myapp-latest.tar.gz
+          target: /tmp/
+
+      - name: Load and Deploy Docker Image on Server
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            IMAGE_TAG="latest"
+            cd /tmp
+            gunzip myapp-${IMAGE_TAG}.tar.gz
+            docker load < myapp-${IMAGE_TAG}.tar
+
+            # Remove previous Docker image
+            docker rmi -f $(docker images -f "dangling=true" -q) || true
+
+            rm -f myapp-${IMAGE_TAG}.tar
+            cd /path/to/your/app
+            docker-compose -f docker-compose.yml down
+            docker-compose -f docker-compose.yml up -d
