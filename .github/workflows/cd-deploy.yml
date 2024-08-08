@@ -50,7 +50,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: myapp-${IMAGE_TAG}.tar.gz
-          target: /tmp/
+          target: /tmp/php
 
       - name: Load and Deploy Docker Image on Server
         uses: appleboy/ssh-action@v1.0.3
@@ -60,19 +60,7 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
             IMAGE_TAG="latest"
-            cd /tmp
+            cd /tmp/php
             gunzip myapp-${IMAGE_TAG}.tar.gz
             docker load < myapp-${IMAGE_TAG}.tar
             rm -f myapp-${IMAGE_TAG}.tar
-
-            # Remove previous Docker image
-            docker images -f "dangling=true" -q | xargs -r docker rmi -f
-
-            # Navigate to application directory and update
-            cd /var/www/langlearnai-be/pr
-            git config --global --add safe.directory /var/www/langlearnai-be/pr
-            git pull origin devops
-
-            # Restart services
-            docker-compose -f docker-compose.staging.yml down
-            docker-compose -f docker-compose.yml up -d
