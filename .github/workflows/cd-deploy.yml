@@ -27,7 +27,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: docker-image
-          path: delve_BE-latest.tar.gz
+          path: delve_be-latest.tar.gz
 
   deploy_to_server:
     needs: build_and_deploy
@@ -46,7 +46,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: delve_BE-latest.tar.gz
+          source: delve_be-latest.tar.gz
           target: /tmp/php
 
       - name: Load and Deploy Docker Image on Server
@@ -58,6 +58,5 @@ jobs:
           script: |
             IMAGE_TAG="latest"
             cd /tmp/php
-            gunzip delve_BE-latest.tar.gz
-            docker load < delve_BE-latest.tar
-            rm -f delve_BE-latest.tar.gz
+            gunzip delve_be-latest.tar.gz
+            docker load < delve_be-latest.tar
