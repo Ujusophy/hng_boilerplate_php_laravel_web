@@ -1,1 +1,31 @@
-.
+name: PR Deploy
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  deploy-pr:
+    environment: 
+      name: preview
+      url: ${{ steps.deploy.outputs.preview-url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout to branch
+        uses: actions/checkout@v4
+      - id: deploy
+        name: Pull Request Deploy
+        uses: hngprojects/pr-deploy@2.0.1
+        with:
+          server_host: ${{ secrets.SSH_HOST }}
+          server_username: ${{ secrets.SSH_USER }}
+          server_key: ${{ secrets.SSH_KEY }}
+          comment: true
+          context: '.'
+          dockerfile: 'Dockerfile'
+          exposed_port: '5000'
+          host_volume_path: '/var/www/langlearnai-be/pr'
+          container_volume_path: '/var/www/langlearnai-be/pr'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Print Preview Url
+        run: |
+          echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}" 
