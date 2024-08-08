@@ -13,16 +13,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
       - name: Build Docker Image
         run: |
           IMAGE_TAG="latest"
-          docker buildx build --tag delve_be --file Dockerfile .
-      - name: Save and Compress Docker Image
+          docker buildx build --tag delve_be:${IMAGE_TAG} --file Dockerfile .
+
+      - name: List Docker Images
+        run: docker images
+
+      - name: Save Docker Image
         run: |
-          docker save delve_be -o image.tar
+          IMAGE_TAG="latest"
+          docker save delve_be:${IMAGE_TAG} -o delve_be.tar
+
       - name: Upload Docker Image Artifact
         uses: actions/upload-artifact@v2
         with:
