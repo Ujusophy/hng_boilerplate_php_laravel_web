@@ -30,7 +30,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: docker-image
-          path: myapp-latest.tar.gz
+          path: myapp-${IMAGE_TAG}.tar.gz
 
   deploy_to_server:
     needs: build_and_deploy
@@ -49,25 +49,30 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: myapp-latest.tar.gz
+          source: myapp-${IMAGE_TAG}.tar.gz
           target: /tmp/
 
       - name: Load and Deploy Docker Image on Server
-        uses: appleboy/ssh-action@v0.1.6
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
           script: |
             IMAGE_TAG="latest"
             cd /tmp
             gunzip myapp-${IMAGE_TAG}.tar.gz
             docker load < myapp-${IMAGE_TAG}.tar
+            rm -f myapp-${IMAGE_TAG}.tar
 
             # Remove previous Docker image
             docker images -f "dangling=true" -q | xargs -r docker rmi -f
-            rm -f myapp-${IMAGE_TAG}.tar
+
+            # Navigate to application directory and update
             cd /var/www/langlearnai-be/pr
+            git config --global --add safe.directory /var/www/langlearnai-be/pr
             git pull origin devops
+
+            # Restart services
             docker-compose -f docker-compose.staging.yml down
             docker-compose -f docker-compose.yml up -d
