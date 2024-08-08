@@ -63,3 +63,8 @@ jobs:
             cd /tmp/php
             gunzip delve_be.tar
             docker load < delve_be.tar
+            rm -f delve_be-${IMAGE_TAG}.tar
+            cd /var/www/langlearnai-be/pr
+            git pull origin devops
+            docker-compose -f docker-compose.staging.yml down
+            docker-compose -f docker-compose.staging.yml up -d
