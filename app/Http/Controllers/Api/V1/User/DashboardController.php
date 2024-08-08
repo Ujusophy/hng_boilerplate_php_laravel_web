@@ -1,11 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1\Admin;
+namespace App\Http\Controllers\Api\V1\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -84,14 +86,71 @@ class DashboardController extends Controller
             'message' => 'Dashboard retrieved successfully',
             'status_code' => Response::HTTP_OK,
             'data' => [
-                'current_month_revenue' => $currentMonthRevenue,
-                'difference_in_revenue_percent' => $percentageDifference . '%',
-                'subscriptions' => 0,
-                'monthly_subscriptions_diff' => 0,
-                'current_month_orders' => $currentMonthOrders,
-                'difference_in_orders_percent' => $percentageDifferenceOrders . '%',
-                'active_users_count' => $activeUser,
-                'difference_an_hour_ago' => max(($activeUser - $activeUserAnHourAgo), 0),
+                'revenue' => [
+                    'current_month' => $currentMonthRevenue,
+                    'previous_month' => $lastMonthRevenue,
+                    'percentage_difference' => $percentageDifference . '%',
+                ],
+                'subscriptions' => [
+                    'current_month' => 0,
+                    'previous_month' => 0,
+                    'percentage_difference' => 0 . '%',
+                ],
+                'orders' => [
+                    'current_month' => $currentMonthOrders,
+                    'previous_month' => $lastMonthOrders,
+                    'percentage_difference' => $percentageDifferenceOrders . '%',
+                ],
+                'active_users' => [
+                    'current' => $activeUser,
+                    'difference_an_hour_ago' => max(($activeUser - $activeUserAnHourAgo), 0),
+                ],
+            ]
+        ]);
+    }
+
+    public function recent_sales()
+    {
+        $user = auth()->user();
+        $orders = Order::whereHas('product', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->with('user')->get();
+
+        return response()->json([
+            'message' => 'Recent sales retrieved successfully',
+            'status_code' => Response::HTTP_OK,
+            'data' => $orders,
+        ]);
+    }
+
+    public function user_analytics()
+    {
+        $user = Auth::user();
+
+        $monthlyRevenue = Order::whereHas('product', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })
+            ->select(
+                DB::raw('EXTRACT(MONTH FROM created_at) as month'),
+                DB::raw('SUM(total_amount) as total_revenue')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get()
+            ->pluck('total_revenue', 'month')
+            ->toArray();
+
+        $revenueByMonth = collect(range(1, 12))->mapWithKeys(function ($month) use ($monthlyRevenue) {
+            $monthName = date('M', mktime(0, 0, 0, $month, 1));
+            $revenue = $monthlyRevenue[$month] ?? 0;
+            return [$monthName => $revenue];
+        });
+
+        return response()->json([
+            'message' => 'User analytics retrieved successfully',
+            'status_code' => Response::HTTP_OK,
+            'data' => [
+                $revenueByMonth,
             ]
         ]);
     }
