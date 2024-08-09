@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - devops
+      - dev
 
 jobs:
   build_and_deploy:
@@ -35,8 +36,8 @@ jobs:
           name: docker-image
           path: delve_be.tar
 
-  deploy_to_server:
-    if: github.event_name == 'push'
+  deploy_to_staging:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/devops')
     needs: build_and_deploy
     runs-on: ubuntu-latest
     steps:
@@ -70,6 +71,42 @@ jobs:
             git pull origin devops
             docker-compose -f docker-compose.staging.yml down
             docker-compose -f docker-compose.staging.yml up -d
+
+  deploy_to_prod:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev')
+    needs: build_and_deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: docker-image
+          path: .
+
+      - name: Transfer Docker Image to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: delve_be.tar
+          target: /tmp/php
+
+      - name: Load and Deploy Docker Image on Server
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            IMAGE_TAG="latest"
+            cd /tmp/php
+            docker load < delve_be.tar
+            rm -f delve_be-${IMAGE_TAG}.tar
+            cd /var/www/langlearnai-be/pr-prod
+            git pull origin dev
+            docker-compose -f docker-compose.production.yml down
+            docker-compose -f docker-compose.production.yml up -d    
 
   deploy-pr:
     if: github.event_name == 'pull_request'
