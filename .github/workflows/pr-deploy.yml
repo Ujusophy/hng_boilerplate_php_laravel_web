@@ -84,11 +84,12 @@ jobs:
         with:
           server_host: ${{ secrets.SSH_HOST }}
           server_username: ${{ secrets.SSH_USER }}
-          ssh_key: ${{ secrets.SSH_KEY }}
+          server_password: ${{ secrets.SSH_PASSWORD }}
           comment: true
           context: '.'
           dockerfile: 'Dockerfile'
           exposed_port: '7001'
+          github_token: ${{ secrets.TOKEN }}
 
       - name: Print Preview Url
         run: |
