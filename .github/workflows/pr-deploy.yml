@@ -71,7 +71,7 @@ jobs:
             docker-compose -f docker-compose.staging.yml up -d
 
   deploy-pr:
-    if: github.event_name == 'push_request'
+    if: github.event_name == 'pull_request'
     environment: 
       name: preview
       url: ${{ steps.deploy.outputs.preview-url }}
