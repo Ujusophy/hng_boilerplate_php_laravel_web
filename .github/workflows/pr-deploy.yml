@@ -6,6 +6,7 @@ on:
       - devops
   pull_request:
     types: [opened, synchronize, reopened, closed]
+
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
@@ -34,6 +35,7 @@ jobs:
           path: delve_be.tar
 
   deploy_to_server:
+    if: github.event_name == 'push'
     needs: build_and_deploy
     runs-on: ubuntu-latest
     steps:
@@ -73,8 +75,8 @@ jobs:
     environment: 
       name: preview
       url: ${{ steps.deploy.outputs.preview-url }}
-    runs-on: ubuntu-latest
     needs: build_and_deploy
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
