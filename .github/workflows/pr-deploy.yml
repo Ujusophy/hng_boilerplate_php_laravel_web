@@ -82,8 +82,8 @@ jobs:
         name: Pull Request Deploy
         uses: hngprojects/pr-deploy@dev
         with:
-          server_host: ${{ secrets.HOST }}
-          server_username: ${{ secrets.USERNAME }}
+          server_host: ${{ secrets.SSH_HOST }}
+          server_username: ${{ secrets.SSH_USER }}
           server_password: ${{ secrets.PASSWORD }}
           comment: true
           context: '.'
