@@ -93,4 +93,5 @@ deploy-pr:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print Preview Url
-        run: echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}"
+        run: |
+          echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}" 
