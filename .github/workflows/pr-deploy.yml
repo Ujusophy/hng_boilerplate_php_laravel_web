@@ -1,12 +1,11 @@
 name: PR and DevOps Deploy
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
   push:
     branches:
       - devops
-
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
