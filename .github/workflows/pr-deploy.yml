@@ -7,13 +7,16 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
 
-jobs:
-  build_and_deploy:
+deploy_to_server:
+    if: github.event_name == 'push'
+    needs: build_and_deploy
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+
+      - name: Starting Deployment
+        run: echo "Deployment"
 
       - name: Build Docker Image
         run: |
@@ -34,11 +37,6 @@ jobs:
           name: docker-image
           path: delve_be.tar
 
-  deploy_to_server:
-    if: github.event_name == 'push'
-    needs: build_and_deploy
-    runs-on: ubuntu-latest
-    steps:
       - name: Download Docker Image Artifact
         uses: actions/download-artifact@v2
         with:
@@ -70,15 +68,17 @@ jobs:
             docker-compose -f docker-compose.staging.yml down
             docker-compose -f docker-compose.staging.yml up -d
 
-  deploy-pr:
+    
+deploy-pr:
     if: github.event_name == 'pull_request'
     environment: 
       name: preview
       url: ${{ steps.deploy.outputs.preview-url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout to branch
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
       - id: deploy
         name: Pull Request Deploy
         uses: hngprojects/pr-deploy@devops
@@ -91,6 +91,6 @@ jobs:
           dockerfile: 'Dockerfile'
           exposed_port: '3030'
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Print Preview Url
-        run: |
-          echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}"  
+        run: echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}"
