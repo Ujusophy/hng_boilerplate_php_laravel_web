@@ -90,4 +90,5 @@ jobs:
           server_password: ${{ secrets.SSH_PASSWORD }}
 
       - name: Print Preview Url
-        run: echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}"
+        run: |
+          echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}" 
