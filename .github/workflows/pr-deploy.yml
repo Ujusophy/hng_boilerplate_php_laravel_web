@@ -8,8 +8,8 @@ on:
       - devops
 
 jobs:
-  if: github.event_name == 'push_request'
   build_and_deploy:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
@@ -36,7 +36,7 @@ jobs:
           path: delve_be.tar
 
   deploy_to_server:
-    if: github.event_name == 'push_request'
+    if: github.event_name == 'push'
     needs: build_and_deploy
     runs-on: ubuntu-latest
     steps:
@@ -73,43 +73,11 @@ jobs:
 
   deploy-pr:
     if: github.event_name == 'pull_request'
-    environment: 
-      name: preview
-      url: ${{ steps.deploy.outputs.preview-url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout to branch
-        uses: actions/checkout@v4
-      - id: deploy
-        name: Pull Request Deploy
-        uses: hngprojects/pr-deploy@dev
-        with:
-          server_host: ${{ secrets.SSH_HOST }}
-          server_username: ${{ secrets.SSH_USER }}
-          s deploy-pr:
-    if: github.event_name == 'pull_request'
-    environment: 
-      name: preview
-      url: ${{ steps.deploy.outputs.preview-url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout to branch
-        uses: actions/checkout@v4
-      - id: deploy
-        name: Pull Request Deploy
-        uses: hngprojects/pr-deploy@dev
-        with:
-          server_host: ${{ secrets.SSH_HOST }}
-          server_username: ${{ secrets.SSH_USER }}
-           deploy-pr:
-    if: github.event_name == 'pull_request'
-    environment: 
-      name: preview
-      url: ${{ steps.deploy.outputs.preview-url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout to branch
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
       - id: deploy
         name: Pull Request Deploy
         uses: hngprojects/pr-deploy@dev
@@ -122,22 +90,7 @@ jobs:
           dockerfile: 'Dockerfile'
           exposed_port: '7001'
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Print Preview Url
-        run: |
-          echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}" : ${{ secrets.SSH_KEY }}
-          comment: true
-          context: '.'
-          dockerfile: 'Dockerfile'
-          exposed_port: '7001'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Print Preview Url
-        run: |
-          echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}" : ${{ secrets.SSH_KEY }}
-          comment: true
-          context: '.'
-          dockerfile: 'Dockerfile'
-          exposed_port: '7001'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Print Preview Url
         run: |
           echo "Preview Url: ${{ steps.deploy.outputs.preview-url }}" 
