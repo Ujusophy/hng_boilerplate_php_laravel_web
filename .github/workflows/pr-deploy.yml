@@ -1,4 +1,4 @@
-name: PR and DevOps Deploy
+name: PR Deploy
 
 on:
   push:
@@ -81,7 +81,7 @@ jobs:
 
       - name: Pull Request Deploy
         id: deploy
-        uses: hngprojects/pr-deploy@dev
+        uses: hngprojects/pr-deploy@devops
         with:
           server_host: ${{ secrets.SSH_HOST }}
           server_username: ${{ secrets.SSH_USER }}
