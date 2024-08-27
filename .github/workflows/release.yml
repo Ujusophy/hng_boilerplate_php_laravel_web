@@ -25,7 +25,7 @@ jobs:
         uses: cycjimmy/semantic-release-action@v4
         with:
         # You can specify specifying version range for the extra plugins if you prefer.
-            working_directory: ./hng_boilerplate_php_laravel_web
+            working_directory: /home/runner/work/hng_boilerplate_php_laravel_web
             extra_plugins: |
                 @semantic-release/changelog@6.0.0
                 @semantic-release/git
