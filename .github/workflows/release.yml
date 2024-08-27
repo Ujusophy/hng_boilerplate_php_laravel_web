@@ -15,9 +15,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Release to GitHub
+      - name: Exit Folder
         run: |
           cd ..
+          ls
+          pwd
       
       - name: Release to GitHub
         uses: cycjimmy/semantic-release-action@v4
