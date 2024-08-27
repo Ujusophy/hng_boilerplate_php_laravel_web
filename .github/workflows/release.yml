@@ -16,9 +16,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Release to GitHub
+        run: |
+          cd ..
+      
+      - name: Release to GitHub
         uses: cycjimmy/semantic-release-action@v4
         with:
         # You can specify specifying version range for the extra plugins if you prefer.
+            working_directory: ./hng_boilerplate_php_laravel_web
             extra_plugins: |
                 @semantic-release/changelog@6.0.0
                 @semantic-release/git
