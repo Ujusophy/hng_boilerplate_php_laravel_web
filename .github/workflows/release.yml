@@ -1,0 +1,28 @@
+name: Release
+on:
+  push:
+    branches:
+      - dev
+  
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  release:
+    runs-on: test-runner
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Release to GitHub
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+        # You can specify specifying version range for the extra plugins if you prefer.
+            extra_plugins: |
+                @semantic-release/changelog@6.0.0
+                @semantic-release/git
+            branches: |
+                ['main']
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
