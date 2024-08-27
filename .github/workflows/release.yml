@@ -17,8 +17,7 @@ jobs:
 
       - name: Init
         run: |
-          echo "{}" > package.json
-          echo "name=hng_boilerplate_php_laravel_web" >> package.json
+          rm package.json
           
       - name: Exit Folder
         run: |
