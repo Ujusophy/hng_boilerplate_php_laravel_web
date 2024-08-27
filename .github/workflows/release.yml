@@ -15,6 +15,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Init
+        run: |
+          echo "{}" > package.json
+          echo "name=hng_boilerplate_php_laravel_web" >> package.json
+          
       - name: Exit Folder
         run: |
           cd ..
@@ -25,7 +30,6 @@ jobs:
         uses: cycjimmy/semantic-release-action@v4
         with:
         # You can specify specifying version range for the extra plugins if you prefer.
-            working_directory: /home/runner/work/hng_boilerplate_php_laravel_web/hng_boilerplate_php_laravel_web
             extra_plugins: |
                 @semantic-release/changelog@6.0.0
                 @semantic-release/git
