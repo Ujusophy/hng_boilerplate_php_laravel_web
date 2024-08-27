@@ -9,7 +9,7 @@ permissions:
   pull-requests: write
 jobs:
   release:
-    runs-on: test-runner
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
