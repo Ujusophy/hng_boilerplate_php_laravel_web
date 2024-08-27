@@ -17,7 +17,8 @@ jobs:
 
       - name: Init
         run: |
-          rm package.json && package-lock.json
+          rm package.json 
+          rm package-lock.json
           
       - name: Exit Folder
         run: |
